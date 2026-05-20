@@ -1,0 +1,30 @@
+# ── terraform.tfvars.example ──────────────────────────────────────────────────
+# Copy this file to terraform.tfvars and fill in real values
+# NEVER commit terraform.tfvars to git — it contains secrets
+# terraform.tfvars is already in .gitignore
+
+aws_region    = "eu-north-1"
+environment   = "production"
+app_name      = "finpay"
+
+# Database
+db_password   = "YourSecurePassword123!"
+db_name       = "finpay_db"
+db_username   = "finpay_user"
+
+# Application secrets
+jwt_secret    = "your-super-secret-jwt-key-minimum-32-characters-long"
+jwt_expires_in = "7d"
+
+# Upstash Redis — get from https://console.upstash.com
+upstash_redis_rest_url   = "https://your-redis.upstash.io"
+upstash_redis_rest_token = "your-upstash-token"
+
+# GitHub — get from AWS Console → CodePipeline → Settings → Connections
+github_connection_arn = "arn:aws:codeconnections:eu-north-1:ACCOUNT_ID:connection/YOUR-CONNECTION-ID"
+github_repo           = "devopschroniclesGit/finpay-api"
+github_branch         = "main"
+
+# Rate limiting
+rate_limit_window_ms      = "900000"
+rate_limit_max_requests   = "100"
