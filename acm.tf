@@ -1,29 +1,32 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # ACM — TLS Certificates
 #
-# We need TWO certificates:
-#   1. Regional cert (var.aws_region) — attached to the ALB
-#   2. us-east-1 cert — attached to CloudFront (AWS requirement, Commit 4)
+# Two certs needed:
+#   1. var.aws_region  → attached to the ALB
+#   2. us-east-1       → attached to CloudFront (AWS hard requirement)
 #
-# Both validate via DNS automatically using Route 53.
-# Certificate provisioning takes 2-5 minutes on first apply.
+# DNS validation requires you to add a CNAME record at Afrihost.
+# Terraform will output exactly what to add.
+#
+# IMPORTANT APPLY SEQUENCE (see bottom of this file for instructions):
+#   Step 1: terraform apply -target=aws_acm_certificate.alb \
+#                           -target=aws_acm_certificate.cloudfront
+#   Step 2: Add the CNAME records at Afrihost (takes 2 min)
+#   Step 3: terraform apply  ← completes everything else
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Certificate in the app's deployment region — used by the ALB
+# Regional cert — used by the ALB in whatever region you deploy to
 resource "aws_acm_certificate" "alb" {
   domain_name               = var.domain_name
   subject_alternative_names = ["*.${var.domain_name}"]
   validation_method         = "DNS"
 
-  # Required for zero-downtime cert rotation:
-  # Terraform creates the new cert before destroying the old one
   lifecycle {
     create_before_destroy = true
   }
 }
 
-# Certificate in us-east-1 — CloudFront only accepts certs from this region
-# Uses the aliased provider defined in main.tf
+# us-east-1 cert — CloudFront will not accept a cert from any other region
 resource "aws_acm_certificate" "cloudfront" {
   provider                  = aws.us_east_1
   domain_name               = var.domain_name
@@ -35,41 +38,42 @@ resource "aws_acm_certificate" "cloudfront" {
   }
 }
 
-# Look up the hosted zone for your domain
-data "aws_route53_zone" "finpay" {
-  name         = var.route53_zone_name  # e.g. "devopschronicles.com"
-  private_zone = false
-}
+# ── Validation ────────────────────────────────────────────────────────────────
+# These resources tell Terraform to WAIT until AWS confirms the certs are valid.
+# They will hang here until you add the CNAME at Afrihost.
+# Timeout is 75 minutes — you have plenty of time.
 
-# Create DNS validation records for the ALB cert
-# These prove to AWS that you own the domain
-resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.alb.domain_validation_options :
-    dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = data.aws_route53_zone.finpay.zone_id
-}
-
-# Wait for AWS to validate the ALB cert before attaching it to the ALB
 resource "aws_acm_certificate_validation" "alb" {
-  certificate_arn         = aws_acm_certificate.alb.arn
-  validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
+  certificate_arn = aws_acm_certificate.alb.arn
+
+  # No validation_record_fqdns here because we can't auto-create
+  # the DNS record at Afrihost — we add it manually instead.
+  # Terraform will poll ACM until AWS sees the record and issues the cert.
+  timeouts {
+    create = "30m"
+  }
 }
 
-# Validation for the CloudFront cert (same DNS records, different cert ARN)
 resource "aws_acm_certificate_validation" "cloudfront" {
-  provider                = aws.us_east_1
-  certificate_arn         = aws_acm_certificate.cloudfront.arn
-  validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.cloudfront.arn
+
+  timeouts {
+    create = "30m"
+  }
+}
+
+# ── Outputs — what to add at Afrihost ────────────────────────────────────────
+# After running: terraform apply -target=aws_acm_certificate.alb
+# These outputs tell you the exact CNAME to add.
+# Both certs use the same domain so one CNAME validates both.
+
+output "acm_validation_cname_name" {
+  description = "Add this as a CNAME record NAME at Afrihost"
+  value       = tolist(aws_acm_certificate.alb.domain_validation_options)[0].resource_record_name
+}
+
+output "acm_validation_cname_value" {
+  description = "Add this as the CNAME record VALUE at Afrihost"
+  value       = tolist(aws_acm_certificate.alb.domain_validation_options)[0].resource_record_value
 }

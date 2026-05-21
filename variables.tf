@@ -128,3 +128,20 @@ variable "github_connection_arn" {
   type        = string
   # Get this from: AWS Console → CodePipeline → Settings → Connections
 }
+
+variable "domain_name" {
+  description = "Full subdomain for the app (e.g. finpay.devopschronicles.com)"
+  type        = string
+  default     = ""
+}
+
+variable "waf_rate_limit" {
+  description = "Max requests per IP per 5 minutes before WAF blocks. 2000 suits most APIs."
+  type        = number
+  default     = 2000
+}
+
+variable "alert_email" {
+  description = "Email for CloudWatch alarm notifications. Check inbox after apply to confirm subscription."
+  type        = string
+}

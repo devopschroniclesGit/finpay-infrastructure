@@ -47,3 +47,8 @@ output "swagger_url" {
   description = "Swagger API documentation"
   value       = "http://${aws_elastic_beanstalk_environment.finpay_production.cname}/api/docs"
 }
+
+output "alb_dns_name" {
+  description = "ALB DNS name — used as CloudFront origin in Commit 4"
+  value       = aws_lb.finpay.dns_name
+}
