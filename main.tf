@@ -11,11 +11,11 @@ terraform {
   # Backend indentation must be exactly 2 spaces inside terraform {}
   # No leading space before "backend"
   backend "s3" {
-    bucket         = "finpay-terraform-state"
+    bucket         = "finpay-terraform-state-623155450632"
     key            = "finpay/production/terraform.tfstate"
     region         = "eu-north-1"
     encrypt        = true
-    dynamodb_table = "finpay-terraform-locks"
+    use_lockfile   = true 
   }
 }
 
