@@ -13,7 +13,7 @@
 # EB security group (already exists) will be updated to only allow traffic FROM this SG
 resource "aws_security_group" "alb" {
   name        = "${var.app_name}-alb-sg"
-  description = "FinPay ALB — internet-facing HTTP and HTTPS only"
+  description = "FinPay ALB - internet-facing HTTP and HTTPS only"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -25,7 +25,7 @@ resource "aws_security_group" "alb" {
   }
 
   ingress {
-    description = "HTTP from internet — redirected to HTTPS by listener rule"
+    description = "HTTP from internet - redirected to HTTPS by listener rule"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -87,10 +87,10 @@ data "aws_elb_service_account" "main" {}
 # and to health-check them
 resource "aws_lb_target_group" "finpay" {
   name        = "${var.app_name}-tg"
-  port        = 3000   # your app's port inside the container
+  port        = 80   # your app's port inside the container
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
-  target_type = "instance"
+  target_type = "ip"
 
   health_check {
     enabled             = true

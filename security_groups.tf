@@ -1,32 +1,30 @@
-# ── Security Groups ───────────────────────────────────────────────────────────
-
 resource "aws_security_group" "eb" {
   name        = "${var.app_name}-eb-sg"
-  description = "FinPay Elastic Beanstalk - inbound HTTP"
+  description = "FinPay Elastic Beanstalk - inbound from ALB only"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP from ALB only"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "App port from ALB only"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   ingress {
-    description = "Node.js app port"
-    from_port   = 3000
-    to_port     = 3000
+    description = "SSH from admin only"
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.admin_ip}/32"]
   }
 
   egress {

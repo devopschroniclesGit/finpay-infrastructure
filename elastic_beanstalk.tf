@@ -36,6 +36,12 @@ resource "aws_elastic_beanstalk_environment" "finpay_production" {
     value     = aws_iam_instance_profile.eb_instance.name
   }
 
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "EC2KeyName"
+    value     = var.ec2_key_pair
+  }
+
   # ── Health check ──────────────────────────────────────────────────────────
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"

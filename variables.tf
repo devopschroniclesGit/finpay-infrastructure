@@ -145,3 +145,15 @@ variable "alert_email" {
   description = "Email for CloudWatch alarm notifications. Check inbox after apply to confirm subscription."
   type        = string
 }
+
+variable "ec2_key_pair" {
+  description = "EC2 key pair name for SSH access to EB instances"
+  type        = string
+  default     = ""
+}
+
+variable "admin_ip" {
+  description = "Your IP address for SSH access - get it from whatismyip.com"
+  type        = string
+  default     = ""
+}
