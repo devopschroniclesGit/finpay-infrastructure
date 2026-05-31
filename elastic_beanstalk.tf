@@ -35,38 +35,6 @@ resource "aws_elastic_beanstalk_environment" "finpay_production" {
     value     = "application"
   }
 
-  setting {
-    namespace = "aws:elbv2:loadbalancer"
-    name      = "SharedLoadBalancer"
-    value     = aws_lb.finpay.arn
-  }
-
-  # Disable the default listener EB would create — you manage listeners in alb.tf
-  setting {
-    namespace = "aws:elbv2:listener:default"
-    name      = "ListenerEnabled"
-    value     = "false"
-  }
-
-  # Tell EB which listener to use — your HTTPS listener on 443
-  setting {
-    namespace = "aws:elbv2:listener:443"
-    name      = "ListenerEnabled"
-    value     = "true"
-  }
-
-  setting {
-    namespace = "aws:elbv2:listener:443"
-    name      = "Protocol"
-    value     = "HTTPS"
-  }
-
-  setting {
-    namespace = "aws:elbv2:listener:443"
-    name      = "SSLCertificateArns"
-    value     = aws_acm_certificate_validation.alb.certificate_arn
-  }
-
   # ── EC2 ────────────────────────────────────────────────────────────────────
   setting {
     namespace = "aws:autoscaling:launchconfiguration"

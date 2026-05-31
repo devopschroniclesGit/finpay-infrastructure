@@ -19,6 +19,7 @@ resource "aws_cloudfront_distribution" "finpay" {
   enabled         = true
   is_ipv6_enabled = true
   aliases         = [var.domain_name]  # finpay.devopschronicles.com
+  web_acl_id = aws_wafv2_web_acl.finpay.arn
 
   # PriceClass_100 = US, Canada, Europe edge locations only
   # Cheapest tier — still includes Cape Town since AWS added African edges
@@ -28,8 +29,8 @@ resource "aws_cloudfront_distribution" "finpay" {
   # Origin = ALB (created in alb.tf)
   # CloudFront forwards cache misses here
   origin {
-    domain_name = aws_lb.finpay.dns_name
-    origin_id   = "alb"
+    domain_name = aws_elastic_beanstalk_environment.finpay_production.cname
+    origin_id   = "eb"
 
     custom_origin_config {
       http_port              = 80

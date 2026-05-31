@@ -162,7 +162,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
       },
       {
         Effect   = "Allow"
-        Action   = ["elasticbeanstalk:*", "ec2:*", "autoscaling:*", "cloudformation:*"]
+        Action   = ["elasticbeanstalk:*", "ec2:*", "autoscaling:*", "cloudformation:*", "elasticloadbalancing:*"]
         Resource = "*"
       },
       {

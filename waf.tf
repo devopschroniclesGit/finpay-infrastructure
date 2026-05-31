@@ -17,8 +17,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 resource "aws_wafv2_web_acl" "finpay" {
-  name  = "${var.app_name}-waf"
-  scope = "REGIONAL"  # REGIONAL attaches to ALB; CLOUDFRONT would attach to CloudFront
+  name     = "${var.app_name}-waf"
+  scope    = "CLOUDFRONT"
+  provider = aws.us_east_1
 
   # Default: allow everything not explicitly blocked
   default_action {
