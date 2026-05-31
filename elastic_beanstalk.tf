@@ -10,17 +10,61 @@ resource "aws_elastic_beanstalk_environment" "finpay_production" {
   application         = aws_elastic_beanstalk_application.finpay.name
   solution_stack_name = var.eb_solution_stack
 
-  # ── Environment type: single instance (no load balancer) ──────────────────
+  # ── Environment type ──────────────────────────────────────────────────────
+  # LoadBalanced instead of SingleInstance — this is what allows EB to sit
+  # behind your ALB properly. SingleInstance bypasses load balancing entirely
+  # which is why the ALB→EB connection kept breaking on every redeploy.
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name      = "EnvironmentType"
-    value     = "SingleInstance"
+    value     = "LoadBalanced"
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:environment"
     name      = "ServiceRole"
     value     = aws_iam_role.eb_service.arn
+  }
+
+  # ── Tell EB to use your existing ALB instead of creating its own ──────────
+  # Without this, EB creates a separate internal load balancer and your
+  # ALB has no way to reach the instances automatically.
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "LoadBalancerType"
+    value     = "application"
+  }
+
+  setting {
+    namespace = "aws:elbv2:loadbalancer"
+    name      = "SharedLoadBalancer"
+    value     = aws_lb.finpay.arn
+  }
+
+  # Disable the default listener EB would create — you manage listeners in alb.tf
+  setting {
+    namespace = "aws:elbv2:listener:default"
+    name      = "ListenerEnabled"
+    value     = "false"
+  }
+
+  # Tell EB which listener to use — your HTTPS listener on 443
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "ListenerEnabled"
+    value     = "true"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "Protocol"
+    value     = "HTTPS"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:443"
+    name      = "SSLCertificateArns"
+    value     = aws_acm_certificate_validation.alb.certificate_arn
   }
 
   # ── EC2 ────────────────────────────────────────────────────────────────────
@@ -42,6 +86,19 @@ resource "aws_elastic_beanstalk_environment" "finpay_production" {
     value     = var.ec2_key_pair
   }
 
+  # ── Auto Scaling ──────────────────────────────────────────────────────────
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MinSize"
+    value     = "1"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MaxSize"
+    value     = "2"
+  }
+
   # ── Health check ──────────────────────────────────────────────────────────
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
@@ -50,9 +107,28 @@ resource "aws_elastic_beanstalk_environment" "finpay_production" {
   }
 
   setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "Port"
+    value     = "80"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "Protocol"
+    value     = "HTTP"
+  }
+
+  setting {
     namespace = "aws:elasticbeanstalk:healthreporting:system"
     name      = "SystemType"
     value     = "enhanced"
+  }
+
+  # ── X-Ray ─────────────────────────────────────────────────────────────────
+  setting {
+    namespace = "aws:elasticbeanstalk:xray"
+    name      = "XRayEnabled"
+    value     = "true"
   }
 
   # ── Application environment variables ─────────────────────────────────────
@@ -110,5 +186,11 @@ resource "aws_elastic_beanstalk_environment" "finpay_production" {
     value     = var.rate_limit_max_requests
   }
 
-  depends_on = [aws_db_instance.finpay]
+  depends_on = [
+    aws_db_instance.finpay,
+    aws_lb.finpay,
+    aws_lb_listener.https,
+    aws_security_group.eb,
+    aws_acm_certificate_validation.alb
+  ]
 }

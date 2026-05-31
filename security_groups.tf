@@ -1,5 +1,5 @@
 resource "aws_security_group" "eb" {
-  name        = "${var.app_name}-eb-sg"
+  name        = "${var.app_name}-${var.environment}-eb-sg"
   description = "FinPay Elastic Beanstalk - inbound from ALB only"
   vpc_id      = data.aws_vpc.default.id
 
@@ -35,11 +35,11 @@ resource "aws_security_group" "eb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.app_name}-eb-sg" }
+  tags = { Name = "${var.app_name}-${var.environment}-eb-sg" }
 }
 
 resource "aws_security_group" "rds" {
-  name        = "${var.app_name}-rds-sg"
+  name        = "${var.app_name}-${var.environment}-rds-sg"
   description = "FinPay RDS - allow inbound from EB only"
   vpc_id      = data.aws_vpc.default.id
 
@@ -58,5 +58,5 @@ resource "aws_security_group" "rds" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.app_name}-rds-sg" }
+  tags = { Name = "${var.app_name}-${var.environment}-rds-sg" }
 }

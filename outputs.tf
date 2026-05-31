@@ -52,3 +52,20 @@ output "alb_dns_name" {
   description = "ALB DNS name — used as CloudFront origin in Commit 4"
   value       = aws_lb.finpay.dns_name
 }
+
+output "cloudflare_update_instructions" {
+  description = "Run this after every terraform apply to update Cloudflare"
+  value = <<-EOT
+    CLOUDFLARE DNS UPDATE REQUIRED:
+    Go to: https://dash.cloudflare.com → devopschronicles.com → DNS
+    
+    Update record:
+      Type:   CNAME
+      Name:   finpay
+      Value:  ${aws_cloudfront_distribution.finpay.domain_name}
+      Proxy:  DNS only (grey cloud)
+    
+    Then verify:
+      curl -I https://finpay.devopschronicles.com/api/v1/health
+  EOT
+}

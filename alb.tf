@@ -12,7 +12,7 @@
 # ALB security group — only allows HTTP/HTTPS from internet
 # EB security group (already exists) will be updated to only allow traffic FROM this SG
 resource "aws_security_group" "alb" {
-  name        = "${var.app_name}-alb-sg"
+  name        = "${var.app_name}-${var.environment}-alb-sg"
   description = "FinPay ALB - internet-facing HTTP and HTTPS only"
   vpc_id      = data.aws_vpc.default.id
 
@@ -40,7 +40,7 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.app_name}-alb-sg" }
+  tags = { Name = "${var.app_name}-${var.environment}-alb-sg" }
 }
 
 resource "aws_lb" "finpay" {
@@ -90,7 +90,7 @@ resource "aws_lb_target_group" "finpay" {
   port        = 80   # your app's port inside the container
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
-  target_type = "ip"
+  target_type = "instance"
 
   health_check {
     enabled             = true
@@ -115,12 +115,8 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
-    type = "redirect"
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"  # permanent redirect — browsers cache this
-    }
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.finpay.arn
   }
 }
 

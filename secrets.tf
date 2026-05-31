@@ -17,12 +17,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 resource "aws_secretsmanager_secret" "finpay" {
-  name        = "${var.app_name}/${var.environment}/app-secrets"
+  name        = "${var.app_name}/${var.environment}/app-secrets-"
   description = "FinPay API — JWT, DB credentials, Redis tokens"
-
-  # 7-day recovery window: if you accidentally delete this, you have 7 days to restore
-  # Set to 0 for immediate deletion during dev (not recommended for prod)
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "finpay" {
